@@ -77,20 +77,22 @@ function drawHistogram(data) {
               "translate(" + margin.left + "," + margin.top + ")");
 
     // X axis: scale it to fit between 0 and the width of the SVG
-    console.log(data.binCenters); // Add this to debug
+    //console.log(data.binCenters); // Add this to debug
     // Right after receiving the data in your fetch's .then block
-if (!data.binCenters) {
-    console.error('binCenters is undefined:', data);
-    // Handle the missing data appropriately, perhaps by showing an error message
-    return;
-}
-    const x = d3.scaleLinear()
-        .domain([d3.min(data.binCenters), d3.max(data.binCenters)])    
-        .range([0, width]);
-    svg.append("g")
-      .attr("transform", "translate(0," + height + ")")
-      .call(d3.axisBottom(x));
 
+
+   // Ensure there's a small buffer for the x domain to prevent bars from overlapping the y-axis
+   const xMin = d3.min(data.binCenters);
+   const xMax = d3.max(data.binCenters);
+   const xBuffer = (xMax - xMin) * 0.05;  // 1% buffer on each side of the x domain
+
+
+   const x = d3.scaleLinear()
+   .domain([xMin - xBuffer, xMax + xBuffer])    
+   .range([0, width]);
+svg.append("g")
+ .attr("transform", "translate(0," + height + ")")
+ .call(d3.axisBottom(x));
     // Y axis: scale it to fit between 0 and the height of the SVG
     const y = d3.scaleLinear()
         .domain([0, d3.max(data.counts)])
@@ -114,23 +116,6 @@ if (!data.binCenters) {
            .attr("height", d => height - y(d))
            .attr("fill", "#69b3a2");
 
-    /* // Draw quantile lines
-    data.quantiles.forEach(q => {
-        svg.append("line")
-            .attr("x1", x(q))
-            .attr("x2", x(q))
-            .attr("y1", 0)
-            .attr("y2", height)
-            .style("stroke", "red")
-            .style("stroke-dasharray", ("3, 3"));
-
-        svg.append("text")
-            .attr("x", x(q))
-            .attr("y", -5)
-            .text(q.toFixed(2))
-            .style("text-anchor", "middle")
-            .style("fill", "red");
-    }); */
 
     // Display the range with the highest occurrence
     const rangeText = document.getElementById('range-text');
@@ -143,36 +128,7 @@ document.getElementById('dataset-dropdown').addEventListener('change', function(
     updateElementButtons(this.value);
 });
 
-// Optional: Implement the functionality to update plots based on time range and bin width inputs.
-// Add event listeners to the input fields for time range and bin width
-/* document.getElementById('time-range-min').addEventListener('change', updatePlotBasedOnInputs);
-document.getElementById('time-range-max').addEventListener('change', updatePlotBasedOnInputs);
-document.getElementById('bin-width').addEventListener('change', updatePlotBasedOnInputs);
 
-function updatePlotBasedOnInputs() {
-    // Get the currently selected dataset and element
-    const dataset = document.getElementById('dataset-dropdown').value;
-    // The element is a bit trickier since it's dynamically generated buttons. You might keep track of the last clicked element.
-    const elementButtons = document.getElementById('element-buttons').getElementsByTagName('button');
-    let selectedElement = null;
-    for (let button of elementButtons) {
-        if (button.classList.contains('selected')) { // Assuming you add 'selected' class on click
-            selectedElement = button.textContent;
-            break;
-        }
-    }
-    
-    // If no element is selected yet, just return without doing anything
-    if (!selectedElement) return;
-    
-    // Get the time range and bin width inputs
-    const timeMin = document.getElementById('time-range-min').value || undefined;
-    const timeMax = document.getElementById('time-range-max').value || undefined;
-    const binWidth = document.getElementById('bin-width').value || 1;
-    
-    // Call updatePlot to refresh the histogram based on the new inputs
-    updatePlot(dataset, selectedElement, [timeMin, timeMax], binWidth);
-} */
 
 // Make sure to update the part where you handle element button clicks to mark the selected element
 document.getElementById('element-buttons').addEventListener('click', function(e) {
