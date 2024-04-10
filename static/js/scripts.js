@@ -29,20 +29,20 @@ function updateElementButtons(dataset) {
                 button.addEventListener('click', () => {
                     const timeMin = document.getElementById('time-range-min').value || undefined;
                     const timeMax = document.getElementById('time-range-max').value || undefined;
-                    const binWidth = document.getElementById('bin-width').value || 1;
-                    updatePlot(dataset, column, [timeMin, timeMax], binWidth);
+                    const numBins  = document.getElementById('bin-width').value || 10;
+                    updatePlot(dataset, column, [timeMin, timeMax], numBins);
                 });
                 container.appendChild(button);
             });
         });
 }
 
-function updatePlot(dataset, element, timeRange, binWidth) {
+function updatePlot(dataset, element, timeRange, numBins) {
     const payload = {
         dataset,
         element,
         timeRange: [timeRange[0] || null, timeRange[1] || null],
-        binWidth: binWidth || null
+        numBins: numBins  || null
     };
 
     fetch('/histogram', {
@@ -77,6 +77,13 @@ function drawHistogram(data) {
               "translate(" + margin.left + "," + margin.top + ")");
 
     // X axis: scale it to fit between 0 and the width of the SVG
+    console.log(data.binCenters); // Add this to debug
+    // Right after receiving the data in your fetch's .then block
+if (!data.binCenters) {
+    console.error('binCenters is undefined:', data);
+    // Handle the missing data appropriately, perhaps by showing an error message
+    return;
+}
     const x = d3.scaleLinear()
         .domain([d3.min(data.binCenters), d3.max(data.binCenters)])    
         .range([0, width]);
@@ -187,11 +194,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const dataset = document.getElementById('dataset-dropdown').value;
         const timeMin = document.getElementById('time-range-min').value;
         const timeMax = document.getElementById('time-range-max').value;
-        const binWidth = document.getElementById('bin-width').value;
+        const numBins = document.getElementById('bin-width').value;
         const selectedElement = getSelectedElement(); // You'll need to implement this function to determine which element is selected
 
         // Call updatePlot with the gathered values
-        updatePlot(dataset, selectedElement, [timeMin, timeMax], binWidth);
+        updatePlot(dataset, selectedElement, [timeMin, timeMax], numBins);
     });
 });
 
