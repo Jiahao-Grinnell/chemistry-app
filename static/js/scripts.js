@@ -90,7 +90,7 @@ function drawHistogram(data) {
         .range([height, 0]);
     svg.append("g")
       .call(d3.axisLeft(y));
-    console.log(data.binCenters, data.counts, data.binWidth);
+    //console.log(data.binCenters, data.counts, data.binWidth);
 
    // Assume there's more than one bin for simplicity in this fix
    let gap = 1; // Gap in pixels you want between bars. Adjust as needed.
@@ -175,7 +175,7 @@ document.getElementById('element-buttons').addEventListener('click', function(e)
         e.target.classList.add('selected');
         
         // Immediately update the plot with the currently selected time range and bin width
-        updatePlotBasedOnInputs();
+        //updatePlotBasedOnInputs();
     }
 }, true); // Use capturing to handle clicks on dynamically added buttons
 
