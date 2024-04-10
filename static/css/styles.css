@@ -1,0 +1,83 @@
+/* styles.css */
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    background-color: #f4f4f4;
+    color: #333;
+}
+
+#dataset-selector, #controls {
+    margin-bottom: 20px;
+}
+
+#element-buttons button {
+    margin-right: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#element-buttons button.selected {
+    background-color: #0056b3;
+}
+
+#element-buttons button:hover {
+    background-color: #0056b3;
+}
+
+#controls label, #dataset-selector label {
+    margin-right: 10px;
+}
+
+#controls input[type=number] {
+    width: 100px;
+    padding: 8px;
+    margin-right: 20px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+#update-plot {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#update-plot:hover {
+    background-color: #218838;
+}
+
+#histogram {
+    margin-top: 20px;
+    border: 1px solid #ccc;
+    padding: 20px;
+    background-color: white;
+}
+
+/* Add to your styles.css */
+#percentile-text {
+    margin-left: 20px; /* Adjust as needed for layout */
+    display: inline-block;
+    vertical-align: top;
+}
+
+#percentile-text ul {
+    list-style-type: none; /* Remove bullet points */
+    padding: 0;
+}
+
+#percentile-text li {
+    margin: 5px 0;
+}
+#range-text {
+    margin-top: 10px;
+}

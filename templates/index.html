@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radiation Level Analysis</title>
+    <link rel="stylesheet" href="static/css/styles.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div id="dataset-selector">
+        <label for="dataset-dropdown">Choose a dataset:</label>
+        <select id="dataset-dropdown"></select>
+    </div>
+
+    <div id="element-buttons"></div>
+
+    <div id="controls">
+        <label for="time-range-min">Time Range Min:</label>
+        <input type="number" id="time-range-min">
+        <label for="time-range-max">Time Range Max:</label>
+        <input type="number" id="time-range-max">
+        <label for="bin-width">Bin Width:</label>
+        <input type="number" id="bin-width" value="1">
+        <button id="update-plot">Update Plot</button>
+    </div>
+
+    <div id="histogram"></div>
+    <div id="range-text"></div>
+
+    <script src="static/js/scripts.js"></script>
+</body>
+</html>
