@@ -114,7 +114,29 @@ svg.append("g")
            .attr("y", d => y(d))
            .attr("width", barWidth)
            .attr("height", d => height - y(d))
-           .attr("fill", "#69b3a2");
+           .attr("fill", "#69b3a2")
+           .on('mouseover', function (event, d) {
+            // Show tooltip on hover
+            d3.select(this).attr('opacity', 0.7); // Optional: change opacity or color on hover
+            const xPosition = parseFloat(d3.select(this).attr('x')) + barWidth / 2;
+            const yPosition = parseFloat(d3.select(this).attr('y')) / 2 + height / 2;
+
+            // Append text to the SVG to show the count on hover
+            svg.append('text')
+               .attr('id', 'tooltip')
+               .attr('x', xPosition)
+               .attr('y', yPosition)
+               .attr('text-anchor', 'middle')
+               .attr('font-size', '12px')
+               .attr('font-weight', 'bold')
+               .attr('fill', 'black')
+               .text(d);
+        })
+        .on('mouseout', function () {
+            // Remove tooltip on mouseout
+            d3.select(this).attr('opacity', 1); // Optional: reset opacity or color on mouseout
+            d3.select('#tooltip').remove(); // Remove the text element from the SVG
+        });
 
 
     // Display the range with the highest occurrence
