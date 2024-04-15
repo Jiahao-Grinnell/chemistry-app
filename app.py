@@ -23,8 +23,12 @@ def get_datasets():
 @app.route('/columns/<dataset>', methods=['GET'])
 def get_dataset_columns(dataset):
     try:
-        df = pd.read_excel(os.path.join(DATA_FOLDER, dataset))
+        dataset = unquote(dataset)
+        file_path = os.path.join(DATA_FOLDER, dataset)
+        df = pd.read_excel(file_path)
         return jsonify(list(df.columns[1:]))
+    except FileNotFoundError:
+        return jsonify({'error': 'File not found.'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 @app.route('/histogram', methods=['POST'])
