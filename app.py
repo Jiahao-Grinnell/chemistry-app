@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 from numpy import percentile
+from urllib.parse import unquote
 
 app = Flask(__name__)
 
@@ -16,6 +17,7 @@ def index():
 @app.route('/datasets', methods=['GET'])
 def get_datasets():
     datasets = [f for f in os.listdir(DATA_FOLDER) if f.endswith('.xlsx')]
+    dataset = unquote(dataset)
     return jsonify(datasets)
 
 @app.route('/columns/<dataset>', methods=['GET'])
