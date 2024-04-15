@@ -13,6 +13,12 @@ logging.basicConfig(level=logging.DEBUG)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FOLDER = os.path.join(BASE_DIR, 'data')
 
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # you can omit the exception type if you don't need it
+    app.logger.error(f'An error occurred: {str(e)}')
+    return jsonify({'error': str(e)}), 500
+
 @app.route('/')
 def index():
     return render_template('index.html')
