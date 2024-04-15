@@ -4,8 +4,11 @@ import numpy as np
 import os
 from numpy import percentile
 from urllib.parse import unquote
+import logging
 
 app = Flask(__name__)
+# Setup logging
+logging.basicConfig(level=logging.DEBUG)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FOLDER = os.path.join(BASE_DIR, 'data')
@@ -25,6 +28,7 @@ def get_dataset_columns(dataset):
     try:
         dataset = unquote(dataset)
         file_path = os.path.join(DATA_FOLDER, dataset)
+        logging.debug('Trying to read file at path: %s', file_path)
         df = pd.read_excel(file_path)
         return jsonify(list(df.columns[1:]))
     except FileNotFoundError:
