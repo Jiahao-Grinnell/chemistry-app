@@ -34,13 +34,14 @@ def get_dataset_columns(dataset):
     try:
         dataset = unquote(dataset)
         file_path = os.path.join(DATA_FOLDER, dataset)
-        logging.debug('Trying to read file at path: %s', file_path)
+        if not os.path.exists(file_path):
+            return jsonify({'error': 'File not found.'}), 404
         df = pd.read_excel(file_path)
         return jsonify(list(df.columns[1:]))
-    except FileNotFoundError:
-        return jsonify({'error': 'File not found.'}), 404
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        error_message = f'An error occurred: {e}'
+        app.logger.error(error_message, exc_info=True)
+        return jsonify({'error': error_message}), 500
 @app.route('/histogram', methods=['POST'])
 def get_histogram_data():
     data = request.json
