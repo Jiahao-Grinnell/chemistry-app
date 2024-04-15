@@ -33,7 +33,7 @@ def get_datasets():
 @app.route('/columns/<dataset>', methods=['GET'])
 def get_dataset_columns(dataset):
     try:
-        #dataset = unquote(dataset)
+        dataset = unquote(dataset)
         #print(dataset)
         file_path = os.path.join(DATA_FOLDER, dataset)
         if not os.path.exists(file_path):
