@@ -26,6 +26,7 @@ def index():
 @app.route('/datasets', methods=['GET'])
 def get_datasets():
     datasets = [f for f in os.listdir(DATA_FOLDER) if f.endswith('.xlsx')]
+    print(datasets)
     #dataset = unquote(dataset)
     return jsonify(datasets)
 
@@ -33,6 +34,7 @@ def get_datasets():
 def get_dataset_columns(dataset):
     try:
         dataset = unquote(dataset)
+        print(dataset)
         file_path = os.path.join(DATA_FOLDER, dataset)
         if not os.path.exists(file_path):
             return jsonify({'error': 'File not found.'}), 404
