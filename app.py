@@ -20,9 +20,11 @@ def get_datasets():
 
 @app.route('/columns/<dataset>', methods=['GET'])
 def get_dataset_columns(dataset):
-    df = pd.read_excel(os.path.join(DATA_FOLDER, dataset))
-    return jsonify(list(df.columns[1:]))
-
+    try:
+        df = pd.read_excel(os.path.join(DATA_FOLDER, dataset))
+        return jsonify(list(df.columns[1:]))
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 @app.route('/histogram', methods=['POST'])
 def get_histogram_data():
     data = request.json
