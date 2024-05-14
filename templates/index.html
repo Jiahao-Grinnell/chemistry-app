@@ -13,6 +13,13 @@
         <select id="dataset-dropdown"></select>
     </div>
 
+    <div id="file-upload">
+        <label for="data-file">Upload Data File:</label>
+        <input type="file" id="data-file" accept=".xlsx">
+        <button onclick="uploadFile()">Upload File</button>
+    </div>
+    
+
     <div id="element-buttons"></div>
 
     <div id="controls">
@@ -22,6 +29,8 @@
         <input type="number" id="time-range-max">
         <label for="bin-width">Bin Quantity:</label>
         <input type="number" id="bin-width" value="20">
+        <label for="overflow-threshold">Overflow Threshold:</label>
+        <input type="number" id="overflow-threshold">
         <button id="update-plot">Update Plot</button>
     </div>
 

@@ -2,3 +2,5 @@ Flask
 numpy
 pandas
 openpyxl
+requests
+werkzeug

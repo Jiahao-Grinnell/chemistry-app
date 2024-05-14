@@ -5,6 +5,9 @@ import os
 from numpy import percentile
 from urllib.parse import unquote
 import logging
+import requests
+import base64
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 # Setup logging
@@ -12,6 +15,10 @@ logging.basicConfig(level=logging.DEBUG)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_FOLDER = os.path.join(BASE_DIR, 'data')
+
+def allowed_file(filename):
+    return filename.lower().endswith('.xlsx')
+
 
 @app.errorhandler(Exception)
 def handle_exception(e):
@@ -22,6 +29,7 @@ def handle_exception(e):
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/datasets', methods=['GET'])
 def get_datasets():
@@ -51,18 +59,36 @@ def get_histogram_data():
     element = data['element']
     time_range = data.get('timeRange')
     num_bins = int(data.get('numBins', 10))  # Use numBins to specify the number of bins directly
+    overflow_threshold = float(data.get('overflowThreshold')) if data.get('overflowThreshold') else None
 
     df = pd.read_excel(os.path.join(DATA_FOLDER, dataset))
-    
+
     # Convert time range to floats, filter the dataframe based on the calculated time range
     time_min = float(time_range[0]) if time_range and time_range[0] is not None else df.iloc[:,0].min()
     time_max = float(time_range[1]) if time_range and time_range[1] is not None else df.iloc[:,0].max()
     df_filtered = df[(df[df.columns[0]] >= time_min) & (df[df.columns[0]] <= time_max)]
 
     if not df_filtered.empty:
-        # Calculate histogram
-        counts, bin_edges = np.histogram(df_filtered[element], bins=num_bins)
+        values = df_filtered[element].dropna()
+
+        # Apply overflow threshold if provided
+        if overflow_threshold is not None:
+            overflow_values = values[values > overflow_threshold]
+            values = values[values <= overflow_threshold]
+            if not overflow_values.empty:
+                values = pd.concat([values, pd.Series([overflow_threshold])])
+                counts, bin_edges = np.histogram(values, bins=num_bins)
+                counts[-1] += len(overflow_values) - 1  # Combine overflow values into the last bin
+            else:
+                counts, bin_edges = np.histogram(values, bins=num_bins)
+        else:
+            counts, bin_edges = np.histogram(values, bins=num_bins)
+
         bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+        # Adjust bin labels if overflow is applied
+        if overflow_threshold is not None:
+            bin_centers[-1] = overflow_threshold  # Set the last bin center to overflow threshold
 
         # Find the bin with the highest frequency
         max_count_index = np.argmax(counts)
@@ -72,6 +98,7 @@ def get_histogram_data():
         histogram_data = {
             'counts': counts.tolist(),
             'binCenters': bin_centers.tolist(),
+            'binEdges': bin_edges.tolist(),
             'maxCountRange': max_count_range,
             'maxCountValue': int(max_count_value)  # Ensure JSON serialization
         }
