@@ -1,6 +1,9 @@
 document.addEventListener('DOMContentLoaded', function() {
     populateDatasets();
 });
+function resetOverflowThreshold() {
+    document.getElementById('overflow-threshold').value = null;
+}
 
 function populateDatasets() {
     fetch('/datasets')
@@ -27,15 +30,109 @@ function updateElementButtons(dataset) {
                 const button = document.createElement('button');
                 button.textContent = column;
                 button.addEventListener('click', () => {
+                    resetOverflowThreshold();
+
                     const timeMin = document.getElementById('time-range-min').value || undefined;
                     const timeMax = document.getElementById('time-range-max').value || undefined;
                     const numBins  = document.getElementById('bin-width').value || 10;
                     const overflowThreshold = document.getElementById('overflow-threshold').value || null;
+                    //console.log(overflowThreshold);
                     updatePlot(dataset, column, [timeMin, timeMax], numBins, overflowThreshold);
+                    updateScatterplot(dataset, column);
                 });
                 container.appendChild(button);
             });
         });
+}
+
+// Add function to update scatterplot
+function updateScatterplot(dataset, element) {
+    const payload = {
+        dataset,
+        element
+    };
+
+    fetch('/scatterplot', {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log("Scatterplot data received:", data);
+        drawScatterplot(data);
+    });
+}
+
+// Add function to draw scatterplot
+function drawScatterplot(data) {
+    // Clear the previous scatterplot
+    const scatterplotContainer = document.getElementById('scatterplot');
+    scatterplotContainer.innerHTML = '';
+
+    if (!data.times || !data.values) {
+        console.error("Invalid data format:", data);
+        return;
+    }
+
+    // Set the dimensions for the SVG
+    const margin = { top: 20, right: 30, bottom: 40, left: 50 },
+          width = 600 - margin.left - margin.right,
+          height = 400 - margin.top - margin.bottom;
+
+    // Append the SVG object to the container 
+    const svg = d3.select(scatterplotContainer).append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+      .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    // X axis
+    const x = d3.scaleLinear()
+        .domain([d3.min(data.times), d3.max(data.times)])
+        .range([0, width]);
+    svg.append("g")
+       .attr("transform", "translate(0," + height + ")")
+       .call(d3.axisBottom(x));
+
+    // Y axis
+    const y = d3.scaleLinear()
+        .domain([d3.min(data.values), d3.max(data.values)])
+        .range([height, 0]);
+    svg.append("g")
+       .call(d3.axisLeft(y));
+
+    // Add dots
+    svg.append('g')
+       .selectAll("dot")
+       .data(data.values)
+       .enter()
+       .append("circle")
+         .attr("cx", (d, i) => x(data.times[i]))
+         .attr("cy", d => y(d))
+         .attr("r", 3)
+         .style("fill", "#69b3a2")
+         .on('mouseover', function(event,d) {
+            const index = data.values.indexOf(d);
+            const tooltip = d3.select('#scatterplot-tooltip');
+            tooltip.text(`Time: ${data.times[index]}, Value: ${d}`);
+         })
+         .on('mouseout', function() {
+            d3.select('#scatterplot-tooltip').text('');
+         });
+
+    // Append fixed tooltip text element
+    d3.select(scatterplotContainer).select("svg")
+      .append('text')
+      .attr('id', 'scatterplot-tooltip')
+      .attr('x', margin.left)
+      .attr('y', height + margin.top + 40)  // Position it below the x-axis
+      .attr('text-anchor', 'start')
+      .attr('font-size', '12px')
+      .attr('font-weight', 'bold')
+      .attr('fill', 'black');
 }
 
 function updatePlot(dataset, element, timeRange, numBins, overflowThreshold) {
@@ -159,6 +256,7 @@ function drawHistogram(data, overflowThreshold) {
 
 // Event listeners for the dataset dropdown change
 document.getElementById('dataset-dropdown').addEventListener('change', function() {
+    resetOverflowThreshold();
     updateElementButtons(this.value);
 });
 
@@ -190,6 +288,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Call updatePlot with the gathered values
         updatePlot(dataset, selectedElement, [timeMin, timeMax], numBins, overflowThreshold);
+        updateScatterplot(dataset, selectedElement);
     });
 });
 

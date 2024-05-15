@@ -106,6 +106,26 @@ def get_histogram_data():
         histogram_data = {'error': 'Filtered dataframe is empty'}
 
     return jsonify(histogram_data)
+@app.route('/scatterplot', methods=['POST'])
+def get_scatterplot_data():
+    data = request.get_json()
+    dataset = data['dataset']
+    element = data['element']
+
+    df = pd.read_excel(os.path.join(DATA_FOLDER, dataset))
+
+    if not df.empty:
+        times = df.iloc[:, 0].dropna().tolist()  # Assuming the first column is the time step
+        values = df[element].dropna().tolist()
+
+        scatterplot_data = {
+            'times': times,
+            'values': values
+        }
+    else:
+        scatterplot_data = {'error': 'Dataframe is empty'}
+
+    return jsonify(scatterplot_data)
 
 if __name__ == '__main__':
     app.run(debug=True)
