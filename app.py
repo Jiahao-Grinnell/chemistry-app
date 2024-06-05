@@ -30,23 +30,33 @@ def handle_exception(e):
 def index():
     return render_template('index.html')
 
+@app.route('/dates', methods=['GET'])
+def get_dates():
+    dates = [f for f in os.listdir(DATA_FOLDER) if os.path.isdir(os.path.join(DATA_FOLDER, f))]
 
-@app.route('/datasets', methods=['GET'])
-def get_datasets():
-    datasets = [f for f in os.listdir(DATA_FOLDER) if f.endswith('.xlsx')]
-    #print(datasets)
-    #dataset = unquote(dataset)
+    return jsonify(dates)
+
+@app.route('/datasets/<date>', methods=['GET'])
+def get_datasets(date):
+    #print(date)
+    date_folder = os.path.join(DATA_FOLDER, date)
+    datasets = [f for f in os.listdir(date_folder) if f.endswith('.xlsx')]
     return jsonify(datasets)
 
-@app.route('/columns/<dataset>', methods=['GET'])
-def get_dataset_columns(dataset):
+@app.route('/columns/<date>/<dataset>', methods=['GET'])
+def get_dataset_columns(date, dataset):
     try:
         dataset = unquote(dataset)
-        #print(dataset)
-        file_path = os.path.join(DATA_FOLDER, dataset)
+        date = unquote(date)
+        file_path = os.path.join(DATA_FOLDER, date, dataset)
+        #print('-------------')
+        #print(file_path)
+        #print('-------------')
         if not os.path.exists(file_path):
             return jsonify({'error': 'File not found.'}), 404
+        
         df = pd.read_excel(file_path)
+        #print(df)
         return jsonify(list(df.columns[1:]))
     except Exception as e:
         error_message = f'An error occurred: {e}'
@@ -57,11 +67,15 @@ def get_histogram_data():
     data = request.json
     dataset = data['dataset']
     element = data['element']
+    print('-------------')
+    print(element)
+    print('-------------')
+    date = data.get('date')
     time_range = data.get('timeRange')
     num_bins = int(data.get('numBins', 10))  # Use numBins to specify the number of bins directly
     overflow_threshold = float(data.get('overflowThreshold')) if data.get('overflowThreshold') else None
 
-    df = pd.read_excel(os.path.join(DATA_FOLDER, dataset))
+    df = pd.read_excel(os.path.join(DATA_FOLDER, date,dataset))
 
     # Convert time range to floats, filter the dataframe based on the calculated time range
     time_min = float(time_range[0]) if time_range and time_range[0] is not None else df.iloc[:,0].min()
@@ -111,8 +125,8 @@ def get_scatterplot_data():
     data = request.get_json()
     dataset = data['dataset']
     element = data['element']
-
-    df = pd.read_excel(os.path.join(DATA_FOLDER, dataset))
+    date = data.get('date')
+    df = pd.read_excel(os.path.join(DATA_FOLDER,date, dataset))
 
     if not df.empty:
         times = df.iloc[:, 0].dropna().tolist()  # Assuming the first column is the time step

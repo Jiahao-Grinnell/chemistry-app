@@ -4,12 +4,31 @@ document.addEventListener('DOMContentLoaded', function() {
 function resetOverflowThreshold() {
     document.getElementById('overflow-threshold').value = null;
 }
-
-function populateDatasets() {
-    fetch('/datasets')
+function populateDates() {
+    fetch('/dates')
+        .then(response => response.json())
+        .then(dates => {
+            const dateSelect = document.getElementById('date-dropdown');
+            dates.forEach(date => {
+                const option = document.createElement('option');
+                option.value = date;
+                option.textContent = date;
+                dateSelect.appendChild(option);
+            });
+            dateSelect.addEventListener('change', function() {
+                //console.log(this.value);
+                populateDatasets(this.value);
+            });
+            // Trigger the change event to populate datasets for the initially selected date
+            dateSelect.dispatchEvent(new Event('change'));
+        });
+}
+function populateDatasets(date) {
+    fetch(`/datasets/${date}`)
         .then(response => response.json())
         .then(datasets => {
             const select = document.getElementById('dataset-dropdown');
+            select.innerHTML = ''; // Clear previous options
             datasets.forEach(dataset => {
                 const option = document.createElement('option');
                 option.value = dataset;
@@ -20,8 +39,8 @@ function populateDatasets() {
         });
 }
 
-function updateElementButtons(dataset) {
-    fetch(`/columns/${dataset}`)
+function updateElementButtons(date,dataset) {
+    fetch(`/columns/${date}/${dataset}`)
         .then(response => response.json())
         .then(columns => {
             const container = document.getElementById('element-buttons');
@@ -37,8 +56,8 @@ function updateElementButtons(dataset) {
                     const numBins  = document.getElementById('bin-width').value || 10;
                     const overflowThreshold = document.getElementById('overflow-threshold').value || null;
                     //console.log(overflowThreshold);
-                    updatePlot(dataset, column, [timeMin, timeMax], numBins, overflowThreshold);
-                    updateScatterplot(dataset, column);
+                    updatePlot(date,dataset, column, [timeMin, timeMax], numBins, overflowThreshold);
+                    updateScatterplot(date,dataset, column);
                 });
                 container.appendChild(button);
             });
@@ -46,8 +65,9 @@ function updateElementButtons(dataset) {
 }
 
 // Add function to update scatterplot
-function updateScatterplot(dataset, element) {
+function updateScatterplot(date,dataset, element) {
     const payload = {
+        date,
         dataset,
         element
     };
@@ -71,7 +91,7 @@ function drawScatterplot(data) {
     // Clear the previous scatterplot
     const scatterplotContainer = document.getElementById('scatterplot');
     scatterplotContainer.innerHTML = '';
-
+    //console.log(data);
     if (!data.times || !data.values) {
         console.error("Invalid data format:", data);
         return;
@@ -135,8 +155,9 @@ function drawScatterplot(data) {
       .attr('fill', 'black');
 }
 
-function updatePlot(dataset, element, timeRange, numBins, overflowThreshold) {
+function updatePlot(date,dataset, element, timeRange, numBins, overflowThreshold) {
     const payload = {
+        date,
         dataset,
         element,
         timeRange: [timeRange[0] || null, timeRange[1] || null],
@@ -256,8 +277,9 @@ function drawHistogram(data, overflowThreshold) {
 
 // Event listeners for the dataset dropdown change
 document.getElementById('dataset-dropdown').addEventListener('change', function() {
+    const date = document.getElementById('date-dropdown').value;
     resetOverflowThreshold();
-    updateElementButtons(this.value);
+    updateElementButtons(date, this.value);
 });
 
 
@@ -275,9 +297,10 @@ document.getElementById('element-buttons').addEventListener('click', function(e)
 }, true); // Use capturing to handle clicks on dynamically added buttons
 
 document.addEventListener('DOMContentLoaded', function() {
-    populateDatasets();
+    populateDates();
 
     document.getElementById('update-plot').addEventListener('click', function() {
+        const date = document.getElementById('date-dropdown').value;
         // Gather all input values
         const dataset = document.getElementById('dataset-dropdown').value;
         const timeMin = document.getElementById('time-range-min').value;
@@ -287,8 +310,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedElement = getSelectedElement();
 
         // Call updatePlot with the gathered values
-        updatePlot(dataset, selectedElement, [timeMin, timeMax], numBins, overflowThreshold);
-        updateScatterplot(dataset, selectedElement);
+        updatePlot(date,dataset, selectedElement, [timeMin, timeMax], numBins, overflowThreshold);
+        updateScatterplot(date,dataset, selectedElement);
     });
 });
 
