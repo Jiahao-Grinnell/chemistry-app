@@ -55,9 +55,10 @@ function updateElementButtons(date,dataset) {
                     const timeMax = document.getElementById('time-range-max').value || undefined;
                     const numBins  = document.getElementById('bin-width').value || 10;
                     const overflowThreshold = document.getElementById('overflow-threshold').value || null;
+                    const yScaleMax = document.getElementById('y-scale-max').value || null;
                     //console.log(overflowThreshold);
-                    updatePlot(date,dataset, column, [timeMin, timeMax], numBins, overflowThreshold);
-                    updateScatterplot(date,dataset, column);
+                    updatePlot(date, dataset, column, [timeMin, timeMax], numBins, overflowThreshold);
+                    updateScatterplot(date, dataset, column, yScaleMax);
                 });
                 container.appendChild(button);
             });
@@ -65,11 +66,12 @@ function updateElementButtons(date,dataset) {
 }
 
 // Add function to update scatterplot
-function updateScatterplot(date,dataset, element) {
+function updateScatterplot(date, dataset, element, yScaleMax) {
     const payload = {
         date,
         dataset,
-        element
+        element,
+        yScaleMax: yScaleMax || null
     };
 
     fetch('/scatterplot', {
@@ -79,15 +81,15 @@ function updateScatterplot(date,dataset, element) {
         },
         body: JSON.stringify(payload)
     })
-    .then(response => response.json())
-    .then(data => {
-        console.log("Scatterplot data received:", data);
-        drawScatterplot(data);
-    });
+        .then(response => response.json())
+        .then(data => {
+            console.log("Scatterplot data received:", data);
+            drawScatterplot(data, yScaleMax);
+        });
 }
 
 // Add function to draw scatterplot
-function drawScatterplot(data) {
+function drawScatterplot(data, yScaleMax) {
     // Clear the previous scatterplot
     const scatterplotContainer = document.getElementById('scatterplot');
     scatterplotContainer.innerHTML = '';
@@ -98,15 +100,15 @@ function drawScatterplot(data) {
     }
 
     // Set the dimensions for the SVG
-    const margin = { top: 20, right: 30, bottom: 40, left: 50 },
-          width = 600 - margin.left - margin.right,
-          height = 400 - margin.top - margin.bottom;
+    const margin = { top: 20, right: 30, bottom: 40, left: 70 },
+        width = 600 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
 
     // Append the SVG object to the container 
     const svg = d3.select(scatterplotContainer).append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
-      .append("g")
+        .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     // X axis
@@ -114,45 +116,64 @@ function drawScatterplot(data) {
         .domain([d3.min(data.times), d3.max(data.times)])
         .range([0, width]);
     svg.append("g")
-       .attr("transform", "translate(0," + height + ")")
-       .call(d3.axisBottom(x));
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
 
-    // Y axis
+    // Y axis - use custom max if provided, otherwise use data max
+    const yMax = yScaleMax ? parseFloat(yScaleMax) : d3.max(data.values);
     const y = d3.scaleLinear()
-        .domain([d3.min(data.values), d3.max(data.values)])
+        .domain([d3.min(data.values), yMax])
         .range([height, 0]);
     svg.append("g")
-       .call(d3.axisLeft(y));
+        .call(d3.axisLeft(y));
+
+    // Add axis labels
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x", 0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "bold")
+        .text("Counts per second");
+
+    svg.append("text")
+        .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.bottom - 5) + ")")
+        .style("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "bold")
+        .text("Time (seconds)");
 
     // Add dots
     svg.append('g')
-       .selectAll("dot")
-       .data(data.values)
-       .enter()
-       .append("circle")
-         .attr("cx", (d, i) => x(data.times[i]))
-         .attr("cy", d => y(d))
-         .attr("r", 3)
-         .style("fill", "#69b3a2")
+        .selectAll("dot")
+        .data(data.values)
+        .enter()
+        .append("circle")
+        .attr("cx", (d, i) => x(data.times[i]))
+        .attr("cy", d => y(d))
+        .attr("r", 3)
+        .style("fill", "#69b3a2")
          .on('mouseover', function(event,d) {
             const index = data.values.indexOf(d);
             const tooltip = d3.select('#scatterplot-tooltip');
             tooltip.text(`Time: ${data.times[index]}, Value: ${d}`);
-         })
+        })
          .on('mouseout', function() {
             d3.select('#scatterplot-tooltip').text('');
-         });
+        });
 
     // Append fixed tooltip text element
     d3.select(scatterplotContainer).select("svg")
-      .append('text')
-      .attr('id', 'scatterplot-tooltip')
-      .attr('x', margin.left)
-      .attr('y', height + margin.top + 40)  // Position it below the x-axis
-      .attr('text-anchor', 'start')
-      .attr('font-size', '12px')
-      .attr('font-weight', 'bold')
-      .attr('fill', 'black');
+        .append('text')
+        .attr('id', 'scatterplot-tooltip')
+        .attr('x', margin.left)
+        .attr('y', height + margin.top + 40)  // Position it below the x-axis
+        .attr('text-anchor', 'start')
+        .attr('font-size', '12px')
+        .attr('font-weight', 'bold')
+        .attr('fill', 'black');
 }
 
 function updatePlot(date,dataset, element, timeRange, numBins, overflowThreshold) {
@@ -172,11 +193,11 @@ function updatePlot(date,dataset, element, timeRange, numBins, overflowThreshold
         },
         body: JSON.stringify(payload)
     })
-    .then(response => response.json())
-    .then(data => {
-        //console.log("Histogram data received:", data);
-        drawHistogram(data, overflowThreshold);
-    });
+        .then(response => response.json())
+        .then(data => {
+            //console.log("Histogram data received:", data);
+            drawHistogram(data, overflowThreshold);
+        });
 }
 
 function drawHistogram(data, overflowThreshold) {
@@ -190,15 +211,15 @@ function drawHistogram(data, overflowThreshold) {
     }
 
     // Set the dimensions for the SVG
-    const margin = { top: 20, right: 30, bottom: 40, left: 50 },
-          width = 600 - margin.left - margin.right,
-          height = 400 - margin.top - margin.bottom;
+    const margin = { top: 20, right: 30, bottom: 40, left: 70 },
+        width = 600 - margin.left - margin.right,
+        height = 400 - margin.top - margin.bottom;
 
     // Append the SVG object to the container 
     const svg = d3.select(histogramContainer).append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
-      .append("g")
+        .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
     // Ensure there's a small buffer for the x domain to prevent bars from overlapping the y-axis
@@ -213,53 +234,71 @@ function drawHistogram(data, overflowThreshold) {
     const xBuffer = (xMax - xMin) * 0.05;  // 5% buffer on each side of the x domain
 
     const x = d3.scaleLinear()
-       .domain([xMin - xBuffer, xMax + xBuffer])    
-       .range([0, width]);
+        .domain([xMin - xBuffer, xMax + xBuffer])
+        .range([0, width]);
 
     // Create the x-axis
     const xAxis = svg.append("g")
-       .attr("transform", "translate(0," + height + ")")
-       .call(d3.axisBottom(x));
+        .attr("transform", "translate(0," + height + ")")
+        .call(d3.axisBottom(x));
 
     // Y axis: scale it to fit between 0 and the height of the SVG
     const y = d3.scaleLinear()
         .domain([0, d3.max(data.counts)])
         .range([height, 0]);
     svg.append("g")
-      .call(d3.axisLeft(y));
+        .call(d3.axisLeft(y));
+
+    // Add axis labels
+    svg.append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", 0 - margin.left)
+        .attr("x", 0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "bold")
+        .text("Frequency");
+
+    svg.append("text")
+        .attr("transform", "translate(" + (width / 2) + " ," + (height + margin.bottom - 5) + ")")
+        .style("text-anchor", "middle")
+        .style("font-size", "14px")
+        .style("font-weight", "bold")
+        .text("Counts per second");
 
     let gap = 1; // Gap in pixels you want between bars. Adjust as needed.
     let barWidth = data.binCenters.length > 1 ? Math.max(x(data.binCenters[1]) - x(data.binCenters[0]) - gap, 1) : 10; // Use a minimum bar width of 1 to avoid negative values
-   
-    svg.selectAll("rect")
-       .data(data.counts)
-       .enter().append("rect")
-           .attr("x", (d, i) => x(data.binCenters[i]) - barWidth / 2)
-           .attr("y", d => y(d))
-           .attr("width", barWidth)
-           .attr("height", d => height - y(d))
-           .attr("fill", "#69b3a2")
-           .on('mouseover', function (event, d, i) {
-                d3.select(this).attr('opacity', 0.7); // Optional: change opacity or color on hover
-                const xPosition = parseFloat(d3.select(this).attr('x')) + barWidth / 2;
-                const yPosition = parseFloat(d3.select(this).attr('y')) / 2 + height / 2;
 
-                // Append text to the SVG to show the count on hover
-                const tooltipText = overflowThreshold && i === data.counts.length - 1 ? `>${overflowThreshold}: ${d}` : d;
-                svg.append('text')
-                   .attr('id', 'tooltip')
-                   .attr('x', xPosition)
-                   .attr('y', yPosition)
-                   .attr('text-anchor', 'middle')
-                   .attr('font-size', '12px')
-                   .attr('font-weight', 'bold')
-                   .attr('fill', 'black')
-                   .text(tooltipText);
-           })
-           .on('mouseout', function () {
-                d3.select(this).attr('opacity', 1); // Optional: reset opacity or color on mouseout
-                d3.select('#tooltip').remove(); // Remove the text element from the SVG
-           });
+    svg.selectAll("rect")
+        .data(data.counts)
+        .enter().append("rect")
+        .attr("x", (d, i) => x(data.binCenters[i]) - barWidth / 2)
+        .attr("y", d => y(d))
+        .attr("width", barWidth)
+        .attr("height", d => height - y(d))
+        .attr("fill", "#69b3a2")
+        .on('mouseover', function (event, d, i) {
+            d3.select(this).attr('opacity', 0.7); // Optional: change opacity or color on hover
+            const xPosition = parseFloat(d3.select(this).attr('x')) + barWidth / 2;
+            const yPosition = parseFloat(d3.select(this).attr('y')) / 2 + height / 2;
+
+            // Append text to the SVG to show the count on hover
+            const tooltipText = overflowThreshold && i === data.counts.length - 1 ? `>${overflowThreshold}: ${d}` : d;
+            svg.append('text')
+                .attr('id', 'tooltip')
+                .attr('x', xPosition)
+                .attr('y', yPosition)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '12px')
+                .attr('font-weight', 'bold')
+                .attr('fill', 'black')
+                .text(tooltipText);
+        })
+        .on('mouseout', function () {
+            d3.select(this).attr('opacity', 1); // Optional: reset opacity or color on mouseout
+            d3.select('#tooltip').remove(); // Remove the text element from the SVG
+        });
 
     // Adjust x-axis labels if overflow is applied
     if (overflowThreshold !== null) {
@@ -290,7 +329,7 @@ document.getElementById('element-buttons').addEventListener('click', function(e)
         // Mark the clicked button as selected
         Array.from(this.getElementsByTagName('button')).forEach(button => button.classList.remove('selected'));
         e.target.classList.add('selected');
-        
+
         // Immediately update the plot with the currently selected time range and bin width
         //updatePlotBasedOnInputs();
     }
@@ -307,11 +346,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const timeMax = document.getElementById('time-range-max').value;
         const numBins = document.getElementById('bin-width').value;
         const overflowThreshold = document.getElementById('overflow-threshold').value || null;
+        const yScaleMax = document.getElementById('y-scale-max').value || null;
         const selectedElement = getSelectedElement();
 
         // Call updatePlot with the gathered values
-        updatePlot(date,dataset, selectedElement, [timeMin, timeMax], numBins, overflowThreshold);
-        updateScatterplot(date,dataset, selectedElement);
+        updatePlot(date, dataset, selectedElement, [timeMin, timeMax], numBins, overflowThreshold);
+        updateScatterplot(date, dataset, selectedElement, yScaleMax);
     });
 });
 
