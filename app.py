@@ -126,6 +126,8 @@ def get_scatterplot_data():
     dataset = data['dataset']
     element = data['element']
     date = data.get('date')
+    y_scale_max = float(data.get("yScaleMax")) if data.get("yScaleMax") else None
+
     df = pd.read_excel(os.path.join(DATA_FOLDER,date, dataset))
 
     if not df.empty:
@@ -134,7 +136,8 @@ def get_scatterplot_data():
 
         scatterplot_data = {
             'times': times,
-            'values': values
+            'values': values,
+            'yScaleMax': y_scale_max,
         }
     else:
         scatterplot_data = {'error': 'Dataframe is empty'}
